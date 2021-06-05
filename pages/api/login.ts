@@ -9,7 +9,7 @@ export default async function login(req, res) {
 
         await setLoginSession(res, session)
 
-        res.status(200).send({ done: true })
+        res.status(200).send({ done: true, user: metadata })
     } catch (error) {
         res.status(error.status || 500).end(error.message)
     }
