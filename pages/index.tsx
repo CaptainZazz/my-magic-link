@@ -1,7 +1,42 @@
+import { useState } from 'react'
 import Head from 'next/head'
+import { Magic } from 'magic-sdk'
 import styles from '../styles/Home.module.css'
 
+import { useUser } from '../lib/hooks'
+import {LogIn, LogInProps} from "../components/LogIn";
+
 export default function Home() {
+
+    const user = useUser()
+    const [errorMsg, setErrorMsg] = useState('')
+
+    const handleSubmitLogin: LogInProps['onSubmit'] = async (email) => {
+        setErrorMsg('');
+
+        try {
+            const magic = new Magic(process.env.NEXT_PUBLIC_MAGIC_PUBLISHABLE_KEY)
+            const didToken = await magic.auth.loginWithMagicLink({ email })
+            const res = await fetch('/api/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: 'Bearer ' + didToken,
+                },
+                body: JSON.stringify({ email }),
+            })
+            if (res.status === 200) {
+                console.log('Logged In!');
+                console.log(await res.text());
+            } else {
+                throw new Error(await res.text())
+            }
+        } catch (e) {
+            console.error('Login Error:', e);
+            setErrorMsg(e.message || 'Error');
+        }
+    }
+
     return (
         <div className={styles.container}>
             <Head>
@@ -14,6 +49,9 @@ export default function Home() {
                 <h1 className={styles.title}>
                     My magic-link app
                 </h1>
+
+                <p>{user ? user.email : "Not logged in"}</p>
+                <LogIn onSubmit={handleSubmitLogin} errorMsg={errorMsg} />
             </main>
         </div>
     )
